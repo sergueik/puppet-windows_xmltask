@@ -4,6 +4,7 @@
 ##Overview
 
 Creating windows schedule task from previously exported.
+Origin: [puppet-windows_xmltask](https://github.com/noma4i/puppet-windows_xmltask) at Puppet Forge. See also: [custom scheduled task module](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/manifests/init.pp)
 
 ##Module Description
 
