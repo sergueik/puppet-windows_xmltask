@@ -8,20 +8,30 @@ Origin: [puppet-windows_xmltask](https://github.com/noma4i/puppet-windows_xmltas
 
 ##Module Description
 
-Windows schedule tasks are tricky. Sometimes you need to setup very special attributes like *parallel process run*. I have ended with simple solution: create task via GUI and export as xml file and import it later.
+Windows schedule tasks are tricky. Sometimes you need to setup very special attributes like *parallel process run*. One possible solution: create task via Scheduled Tasks UI, save and feed to the provider. For common commands one can export generic job definition file (xml) as erb template, let the provider generate a task definition from template, run and wait for completion.
 
 ##Usage
 
+```
+windows_xmltask::job_definition { 'mytask' :
+  program => 'notepad.exe',
+} ->
+windows_xmltask {'mytask':
+  job_definition => 'c:/windows/temp/mytask.xml',
+  wait           => true,
+  timeout        => 300,
+  create         => false,
+}
 
-	windows_xmltask {'My Task Name':
-    	ensure => present,
-    	overwrite => 'false',
-    	xmlfile => 'puppet:///config/soft/my_exported_task.xml',
-  	}
-
-
-##License
-
-[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
+```
+or
+```
+windows_xmltask { 'mytask' :
+  program => 'notepad.exe',
+  wait    => true,
+  timeout => 300,
+  create  => true,
+}
+```
 
 

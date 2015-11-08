@@ -2,48 +2,62 @@
 # vi: set ft=puppet :
 
 define windows_xmltask(
-  $wait        = true,
-  $command     = 'notepad.exe',
-  $script      = 'manage_scheduled_task',
-  $version     = '0.2.0'
+  $program = undef,
+  $arguments = undef,
+  $description = $title,
+  $domain = '.',
+  $job_definition = undef,
+  $timeout = 300,
+  $username = 'vagrant',
+  $version = '0.2.0',
+  $wait = true,
+  $create = false,
+  $workdir = 'c:/windows/temp'
 )   {
-  # Validate install parameters.
+  # validate install parameters
   validate_bool($wait)
-  validate_string($script)
-  validate_string($command)
+  validate_string($timeout)
+  validate_string($program)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$')
   $random = fqdn_rand(1000,  $taskname)
-  $taskname = regsubst($name, "[$/\\|:, ]", '_', 'G')
-  $temp_dir = "c:\\windows\\temp\\${taskname}"
-  $script_path = "${temp_dir}\\${script}.ps1"
-  $xml_job_definition_path = "${temp_dir}\\${script}.${random}.xml"
-  $log = "${temp_dir}\\${script}.${random}.log"
-
+  $taskname = regsubst($title, "[$/\\|:, ]", '_', 'G')
+  # log file will be passed to the script template
+  $logfile = "c:\\windows\\temp\\${taskname}.${random}.log"
+  $script = "c:\\windows\\temp\\${taskname}.ps1"
+  if $create {
+    $job_definition = "c:\\windows\\temp$\\${taskname}.xml"
+    windows_xmltask::job_definition  { $taskname:
+      program => $program,
+      arguments => $arguments,
+      description => $description,
+      domain => $domain,
+      username> = $username,
+      workdir => $workdir,
+    }
+  } else {
+    validate_string($job_definition)
+  }
   # https://github.com/counsyl/puppet-windows/blob/master/templates/refresh_environment.ps1.erb
-  ensure_resource('file', $temp_dir , {
-    ensure => directory,
-  }) ->
-  file { "${name} launcher log":
-    name               => "${script}${random}.log",
-    path               => $log,
+  file { $logfile:
     ensure             => absent,
     source_permissions => ignore,
   } ->
 
-  file { "${name} launcher script":
+  file { $script:
     ensure             => file,
-    path               => $script_path,
-    content            => template('custom_command/manage_scheduled_task_ps1.erb'),
+    content            => template('windows_xmltask/run_task_ps1.erb'),
     source_permissions => ignore,
   } ->
 
-  exec { "Execute script that will create and run scheduled task ${name}":
-    command   => "powershell -executionpolicy remotesigned -file ${script_path}",
+  exec { "${taskname}_execute":
+    command   => "powershell -executionpolicy remotesigned -file ${script}",
     logoutout => true,
-    require   => File[ "${name} launcher script"],
-    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    require   => File[$script],
+    path      => ['C:\Windows\System32\WindowsPowerShell\v1.0',
+                  'C:\Windows\System32'],
     provider  => 'powershell',
   }
+# TODO: support Windows 8.1 case - utilize Scheduled Task cmdlets
 #    exec { "Importing task $taskname":
 #      command => "
 #        Try{
