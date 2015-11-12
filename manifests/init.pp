@@ -20,6 +20,15 @@ define windows_xmltask(
   validate_string($program)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$')
   $random = fqdn_rand(1000,  $taskname)
+
+  case $::osfamily {
+    Windows: {
+      $supported = true
+    }
+    default: {
+      fail("The ${module_name} module is not supported on ${::osfamily} system")
+    }
+  }
   $taskname = regsubst($title, "[$/\\|:, ]", '_', 'G')
   # log file will be passed to the script template
   $logfile = "c:\\windows\\temp\\${taskname}.${random}.log"
