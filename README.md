@@ -42,7 +42,50 @@ windows_xmltask { 'mytask' :
   create  => true,
 }
 ```
+Sample serverspec
+-----------------
+```
+  context 'Application Task Scheduler configuration' do
+    describe file('C:/Programdata/LogRotate_scheduled_task.xml') do
+      it { should exist }
+      it { should be_file }
+      ['<Command>"C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\logrotate.exe"</Command>','<Arguments>"C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\Content\\\\sample.conf"</Arguments>','<WorkingDirectory>c:\\\\windows\\\\temp</WorkingDirectory>'].each do |line| 
+        it { should contain /#{Regexp.new(line)}/i }
+      end 
+      it { should contain '<Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task" version="1.3">' }
+      it { should contain '<UserId>S-1-5-18</UserId>' }
 
+    end
+  end
+```  
+```
+  context 'Application Task Scheduler' do
+    name = 'LogRotate' 
+    describe command(<<-EOF
+schtasks.exe /Query /TN #{name} /xml
+EOF
+    ) do
+      its(:exit_status) {should eq 0 }
+      ['<Command>"C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\logrotate.exe"</Command>','<Arguments>"C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\Content\\\\sample.conf"</Arguments>','<WorkingDirectory>c:\\\\windows\\\\temp</WorkingDirectory>'].each do |line| 
+        its(:stdout) {should match /#{Regexp.new(line)}/i }
+      end 
+    end
+  end
+
+```
+
+Sample spec
+-----------
+
+```
+      it 'task is scheduled daily' do
+        should contain_file('C:/ProgramData/logRotate_scheduled_task.xml').with_content(/<ScheduleByDay>\r?\n\s+<DaysInterval>1<\/DaysInterval>\r?\n\s+<\/ScheduleByDay>/).that_comes_before('Exec[application_create_scheduled_task]')
+      end
+      it 'creates scheduled task' do
+        should contain_exec('application_create_scheduled_task').with('require' => 'File[C:/ProgramData/logRotate_scheduled_task.xml]')
+      end
+
+```
 Author
 ------
 [Serguei Kouzmine](kouzmine_serguei@yahoo.com)
