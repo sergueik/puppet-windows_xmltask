@@ -36,12 +36,14 @@ define windows_xmltask(
   if $create {
     $job_definition = "c:\\windows\\temp$\\${taskname}.xml"
     windows_xmltask::job_definition  { $taskname:
-      program => $program,
-      arguments => $arguments,
+      program     => $program,
+      arguments   => $arguments,
       description => $description,
-      domain => $domain,
-      username> = $username,
-      workdir => $workdir,
+      domain      => $domain,
+      username    => $username,
+      workdir     => $workdir,
+      # TODO:
+      # LogonType InteractiveToken vs Password
     }
   } else {
     validate_string($job_definition)
